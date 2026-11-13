@@ -21,7 +21,7 @@ const TABS: { id: Tab; label: string }[] = [
 
 export default function App() {
   const { state, update, replace } = useProgress();
-  const { session, loading: authLoading, signInWithEmail, signOut } = useAuth();
+  const { session, loading: authLoading, signInWithEmail, verifyCode, signOut } = useAuth();
   const [distanceUnit, setDistanceUnit] = useDistanceUnit();
   useCloudSync(session, state, update);
   const now = useMemo(() => new Date(), []);
@@ -90,6 +90,7 @@ export default function App() {
             session={session}
             authLoading={authLoading}
             signInWithEmail={signInWithEmail}
+            verifyCode={verifyCode}
             signOut={signOut}
             distanceUnit={distanceUnit}
             setDistanceUnit={setDistanceUnit}

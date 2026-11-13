@@ -24,8 +24,14 @@ all come straight from these:
 
 ## Cloud sync & leaderboard (Supabase)
 
-The app works fully offline/local with no account. Signing in (magic-link email, from the Rank tab)
+The app works fully offline/local with no account. Signing in (email + 6-digit code, from the Rank tab)
 additionally syncs progress to Supabase so it follows you across devices and appears on the Squad leaderboard.
+
+Sign-in uses a **typed 6-digit code**, not a clickable magic link. This is deliberate: on a corporate network,
+email security scanners (Microsoft Defender, Proofpoint, etc.) often "click" links in incoming email to check
+them for phishing, which burns a magic link's single-use token before the real user opens it — causing an
+`otp_expired` / `access_denied` error the moment they click it themselves. A typed code has nothing for a
+scanner to click, so it isn't affected.
 
 **One-time setup** (already done for this repo's project, documented here for reference / if you fork it):
 
@@ -33,15 +39,17 @@ additionally syncs progress to Supabase so it follows you across devices and app
 2. In the SQL Editor, run [`supabase/schema.sql`](supabase/schema.sql) once — creates `profiles`, `progress`,
    `notes` tables with row-level security (everyone signed in can read names + progress for the leaderboard;
    each person can only write their own rows; notes stay private).
-3. In **Authentication → URL Configuration**, set the Site URL and add Redirect URLs for every place the app
-   runs: e.g. `http://127.0.0.1:5173` for local dev and `https://maurodeluca.github.io/12-weeks-out/` for
-   production. Magic-link emails redirect back here.
-4. Copy **Settings → API → Project URL** and **Publishable key** into [`src/lib/supabaseClient.ts`](src/lib/supabaseClient.ts).
+3. In **Authentication → Email Templates → Magic Link**, add `{{ .Token }}` somewhere in the template body
+   (e.g. "Your sign-in code is {{ .Token }}") — Supabase's default template only renders the link, so without
+   this edit the 6-digit code never appears in the email.
+4. (Optional, defense-in-depth) In **Authentication → URL Configuration**, set Redirect URLs for every place
+   the app runs, in case anyone clicks the link instead of typing the code.
+5. Copy **Settings → API → Project URL** and **Publishable key** into [`src/lib/supabaseClient.ts`](src/lib/supabaseClient.ts).
    The publishable key is safe to commit — it's meant for client-side code; row-level security in `schema.sql`
    is what actually protects data.
 
-> Free-tier Supabase rate-limits built-in auth emails (a handful per hour). Fine for a company-sized challenge;
-> configure custom SMTP in Supabase if you expect a lot of sign-ins at once.
+> Free-tier Supabase rate-limits built-in auth emails (a handful per hour). If you see "email rate limit
+> exceeded", wait ~an hour before retrying, or configure custom SMTP in Supabase for heavier use.
 
 ## Develop
 
