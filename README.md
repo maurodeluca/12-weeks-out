@@ -3,6 +3,16 @@
 Progress tracker for the **Flutter Gym "12 Weeks Out" challenge** (14 Sept – 11 Dec 2026).
 Mobile-first, installable (PWA), works offline. Black, gold, stencil type — Rocky training montage meets boot camp.
 
+## Inspiration
+
+Built from the instructor's own challenge sheet and poster — the 12-week schedule, exercises and targets
+all come straight from these:
+
+<p>
+  <img src="docs/inspiration/12-weeks-out-poster.jpeg" alt="Flutter Dublin 12 Weeks Out poster" width="45%" />
+  <img src="docs/inspiration/flutter-gym-programme.jpeg" alt="Flutter Gym Programme sheet with the week-by-week exercises" width="45%" />
+</p>
+
 ## Features
 
 - **Mission** – this week's exercises with targets, kit weights (men/women) and incline. Log with +/- steps, type an exact number, or hit **DONE**.
