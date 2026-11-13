@@ -6,6 +6,7 @@ import {
   completedWeeks,
   exportState,
   formatAmount,
+  formatDistance,
   importState,
   initialState,
   overallFraction,
@@ -14,6 +15,7 @@ import {
   streak,
   totals,
   type Category,
+  type DistanceUnit,
   type State,
 } from '../lib/progress';
 import { Account } from './Account';
@@ -28,6 +30,8 @@ interface Props {
   authLoading: boolean;
   signInWithEmail: (email: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<{ error: Error | null }>;
+  distanceUnit: DistanceUnit;
+  setDistanceUnit: (unit: DistanceUnit) => void;
 }
 
 function daysToGo(now: Date): number {
@@ -37,7 +41,19 @@ function daysToGo(now: Date): number {
   return Math.round((end.getTime() - today.getTime()) / 86_400_000);
 }
 
-export function Rank({ state, currentWeek, now, update, replace, session, authLoading, signInWithEmail, signOut }: Props) {
+export function Rank({
+  state,
+  currentWeek,
+  now,
+  update,
+  replace,
+  session,
+  authLoading,
+  signInWithEmail,
+  signOut,
+  distanceUnit,
+  setDistanceUnit,
+}: Props) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [message, setMessage] = useState('');
   const fraction = overallFraction(state);
@@ -105,7 +121,7 @@ export function Rank({ state, currentWeek, now, update, replace, session, authLo
       <div className="card">
         <h3>Distance covered</h3>
         <p className="totals">
-          {formatAmount(t.mi ?? 0, 'mi')} · {formatAmount(t.m ?? 0, 'm')} · {formatAmount(t.reps ?? 0, 'reps')} reps
+          {formatDistance(t.mi ?? 0, distanceUnit)} · {formatAmount(t.m ?? 0, 'm')} · {formatAmount(t.reps ?? 0, 'reps')} reps
         </p>
       </div>
 
@@ -146,6 +162,22 @@ export function Rank({ state, currentWeek, now, update, replace, session, authLo
                 onClick={() => update((s) => ({ ...s, category: c }))}
               >
                 {c === 'men' ? 'Men' : 'Women'}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="field">
+          <span>Distance unit</span>
+          <div className="seg" role="radiogroup" aria-label="Distance unit">
+            {(['mi', 'km'] as DistanceUnit[]).map((u) => (
+              <button
+                key={u}
+                role="radio"
+                aria-checked={distanceUnit === u}
+                className={distanceUnit === u ? 'on' : ''}
+                onClick={() => setDistanceUnit(u)}
+              >
+                {u === 'mi' ? 'Miles' : 'Km'}
               </button>
             ))}
           </div>

@@ -108,7 +108,7 @@ export const WEEKS: Week[] = [
   {
     week: 8,
     exercises: [
-      ex('run', 'Run', 15, 'mi'),
+      ex('ruck', 'Ruck', 15, 'mi', { weightKg: RUCK, incline: 8 }),
       ex('row', 'Row', 2000, 'm'),
       ex('ski', 'Ski erg', 2000, 'm'),
       ex('squat-press', 'Squat to press', 100, 'reps', { weightKg: SQUAT_PRESS }),

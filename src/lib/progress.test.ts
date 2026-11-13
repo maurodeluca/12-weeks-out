@@ -3,12 +3,15 @@ import { WEEKS } from '../data/programme';
 import {
   completedWeeks,
   currentWeekNumber,
+  displayDistance,
   exportState,
+  formatDistance,
   importState,
   initialState,
   isWeekComplete,
   logKey,
   mergeState,
+  nativeDistance,
   overallFraction,
   rankFor,
   streak,
@@ -90,6 +93,20 @@ describe('currentWeekNumber', () => {
     expect(currentWeekNumber(new Date(2026, 10, 30))).toBe(12);
     expect(currentWeekNumber(new Date(2026, 11, 11, 20))).toBe(12);
     expect(currentWeekNumber(new Date(2026, 11, 12))).toBe(13);
+  });
+});
+
+describe('distance unit conversion', () => {
+  it('converts between miles and km', () => {
+    expect(displayDistance(10, 'mi')).toBe(10);
+    expect(displayDistance(10, 'km')).toBeCloseTo(16.09344);
+    expect(nativeDistance(16.09344, 'km')).toBeCloseTo(10);
+    expect(nativeDistance(10, 'mi')).toBe(10);
+  });
+
+  it('formats a distance with the right suffix and rounding', () => {
+    expect(formatDistance(15, 'mi')).toBe('15 mi');
+    expect(formatDistance(15, 'km')).toBe('24.1 km');
   });
 });
 

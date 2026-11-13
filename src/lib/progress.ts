@@ -2,6 +2,21 @@ import { END_DATE, START_DATE, WEEKS, type Exercise, type Unit, type Week } from
 
 export type Category = 'men' | 'women';
 
+export type DistanceUnit = 'mi' | 'km';
+
+const KM_PER_MI = 1.609344;
+
+export const toKm = (mi: number) => mi * KM_PER_MI;
+export const toMi = (km: number) => km / KM_PER_MI;
+
+/** Converts a mile-denominated amount for display; a no-op unless the user prefers km. */
+export const displayDistance = (amountMi: number, unit: DistanceUnit) =>
+  unit === 'km' ? toKm(amountMi) : amountMi;
+
+/** Converts a value the user typed/clicked in their preferred unit back to the native miles used for storage. */
+export const nativeDistance = (amountInUnit: number, unit: DistanceUnit) =>
+  unit === 'km' ? toMi(amountInUnit) : amountInUnit;
+
 export interface State {
   name: string;
   category: Category;
@@ -122,6 +137,14 @@ export function formatAmount(n: number, unit: Unit): string {
   if (unit === 'reps') return s;
   return s;
 }
+
+/** Formats a mile-denominated amount in the user's preferred distance unit. */
+export function formatDistance(amountMi: number, unit: DistanceUnit): string {
+  const v = displayDistance(amountMi, unit);
+  const rounded = Number.isInteger(v) ? v : Math.round(v * 10) / 10;
+  return `${rounded.toLocaleString('en-IE')} ${unit}`;
+}
+
 
 /**
  * Combine a device's local state with what's stored in the cloud after signing in.

@@ -6,6 +6,7 @@ import {
   weekEnd,
   weekFraction,
   weekStart,
+  type DistanceUnit,
   type State,
 } from '../lib/progress';
 import { ExerciseRow } from './ExerciseRow';
@@ -14,12 +15,13 @@ interface Props {
   week: Week;
   state: State;
   currentWeek: number;
+  distanceUnit: DistanceUnit;
   update: (fn: (s: State) => State) => void;
 }
 
 const fmt = (d: Date) => d.toLocaleDateString('en-IE', { day: 'numeric', month: 'short' });
 
-export function WeekView({ week, state, currentWeek, update }: Props) {
+export function WeekView({ week, state, currentWeek, distanceUnit, update }: Props) {
   const start = weekStart(week.week);
   const end = weekEnd(week.week);
   const pct = Math.round(weekFraction(state, week) * 100);
@@ -66,6 +68,7 @@ export function WeekView({ week, state, currentWeek, update }: Props) {
             exercise={ex}
             done={getDone(state, week.week, ex)}
             category={state.category}
+            distanceUnit={distanceUnit}
             onChange={(v) => setDone(ex.id, v)}
           />
         ))}

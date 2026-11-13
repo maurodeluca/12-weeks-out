@@ -7,6 +7,7 @@ import { WeekView } from './components/WeekView';
 import { clamp, currentWeekNumber } from './lib/progress';
 import { useAuth } from './lib/useAuth';
 import { useCloudSync } from './lib/useCloudSync';
+import { useDistanceUnit } from './lib/useDistanceUnit';
 import { useProgress } from './lib/useProgress';
 
 type Tab = 'week' | 'campaign' | 'rank' | 'leaderboard';
@@ -21,6 +22,7 @@ const TABS: { id: Tab; label: string }[] = [
 export default function App() {
   const { state, update, replace } = useProgress();
   const { session, loading: authLoading, signInWithEmail, signOut } = useAuth();
+  const [distanceUnit, setDistanceUnit] = useDistanceUnit();
   useCloudSync(session, state, update);
   const now = useMemo(() => new Date(), []);
   const currentWeek = currentWeekNumber(now);
@@ -64,7 +66,7 @@ export default function App() {
                 ›
               </button>
             </nav>
-            <WeekView week={week} state={state} currentWeek={currentWeek} update={update} />
+            <WeekView week={week} state={state} currentWeek={currentWeek} distanceUnit={distanceUnit} update={update} />
           </>
         )}
         {tab === 'campaign' && (
@@ -89,6 +91,8 @@ export default function App() {
             authLoading={authLoading}
             signInWithEmail={signInWithEmail}
             signOut={signOut}
+            distanceUnit={distanceUnit}
+            setDistanceUnit={setDistanceUnit}
           />
         )}
         {tab === 'leaderboard' && <Leaderboard session={session} />}
