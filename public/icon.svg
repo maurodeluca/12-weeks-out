@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" fill="#ffd83a"/>
+  <path d="M96 150l60 0 50 56-50 56-60 0 50-56z" fill="#0a0a0a"/>
+  <path d="M176 150l60 0 50 56-50 56-60 0 50-56z" fill="#0a0a0a" opacity=".6"/>
+  <text x="256" y="400" text-anchor="middle" font-family="Impact, Arial Black, sans-serif" font-size="190" fill="#0a0a0a">12</text>
+  <rect x="96" y="430" width="320" height="14" fill="#0a0a0a"/>
+</svg>

@@ -1,0 +1,112 @@
+import { describe, expect, it } from 'vitest';
+import { WEEKS } from '../data/programme';
+import {
+  completedWeeks,
+  currentWeekNumber,
+  exportState,
+  importState,
+  initialState,
+  isWeekComplete,
+  logKey,
+  overallFraction,
+  rankFor,
+  streak,
+  totals,
+  weekFraction,
+  type State,
+} from './progress';
+
+const completeWeek = (state: State, n: number): State => {
+  const logs = { ...state.logs };
+  for (const ex of WEEKS[n - 1].exercises) logs[logKey(n, ex.id)] = ex.target;
+  return { ...state, logs };
+};
+
+describe('programme data', () => {
+  it('has 12 weeks with unique exercise ids per week', () => {
+    expect(WEEKS).toHaveLength(12);
+    for (const w of WEEKS) {
+      const ids = w.exercises.map((e) => e.id);
+      expect(new Set(ids).size).toBe(ids.length);
+    }
+  });
+});
+
+describe('progress', () => {
+  it('starts at zero', () => {
+    expect(overallFraction(initialState)).toBe(0);
+    expect(completedWeeks(initialState)).toBe(0);
+  });
+
+  it('computes partial week progress, capping over-achievement', () => {
+    const w1 = WEEKS[0];
+    const state: State = {
+      ...initialState,
+      logs: { [logKey(1, 'run')]: 5, [logKey(1, 'squats')]: 999 },
+    };
+    expect(weekFraction(state, w1)).toBeCloseTo(2 / 5);
+    expect(isWeekComplete(state, w1)).toBe(false);
+  });
+
+  it('detects complete weeks and overall completion', () => {
+    let state = initialState;
+    for (let i = 1; i <= 12; i++) state = completeWeek(state, i);
+    expect(completedWeeks(state)).toBe(12);
+    expect(overallFraction(state)).toBe(1);
+    expect(rankFor(1).name).toBe('Champion');
+  });
+
+  it('computes streaks without penalising an unfinished current week', () => {
+    let state = completeWeek(initialState, 1);
+    state = completeWeek(state, 2);
+    expect(streak(state, 3)).toBe(2);
+    expect(streak(state, 2)).toBe(2);
+    state = completeWeek(state, 4);
+    expect(streak(state, 4)).toBe(1);
+  });
+
+  it('sums totals by unit, ignoring overshoot', () => {
+    const state: State = {
+      ...initialState,
+      logs: { [logKey(1, 'run')]: 50, [logKey(1, 'row')]: 500 },
+    };
+    expect(totals(state)).toEqual({ mi: 5, m: 500 });
+  });
+
+  it('assigns ranks', () => {
+    expect(rankFor(0).name).toBe('Recruit');
+    expect(rankFor(0.5).name).toBe('Sergeant');
+  });
+});
+
+describe('currentWeekNumber', () => {
+  it('maps dates to programme weeks', () => {
+    expect(currentWeekNumber(new Date(2026, 8, 13))).toBe(0);
+    expect(currentWeekNumber(new Date(2026, 8, 14))).toBe(1);
+    expect(currentWeekNumber(new Date(2026, 8, 20, 23, 59))).toBe(1);
+    expect(currentWeekNumber(new Date(2026, 8, 21))).toBe(2);
+    expect(currentWeekNumber(new Date(2026, 10, 13))).toBe(9);
+    expect(currentWeekNumber(new Date(2026, 10, 30))).toBe(12);
+    expect(currentWeekNumber(new Date(2026, 11, 11, 20))).toBe(12);
+    expect(currentWeekNumber(new Date(2026, 11, 12))).toBe(13);
+  });
+});
+
+describe('backup', () => {
+  it('round-trips state', () => {
+    const state: State = {
+      name: 'Rocky',
+      category: 'women',
+      logs: { [logKey(1, 'run')]: 3 },
+      notes: { 1: 'Tough one' },
+    };
+    expect(importState(exportState(state))).toEqual(state);
+  });
+
+  it('rejects junk and sanitises bad values', () => {
+    expect(() => importState('{"hello":1}')).toThrow();
+    expect(() => importState('not json')).toThrow();
+    const s = importState('{"logs":{"1:run":-4,"1:row":"x","1:squats":10}}');
+    expect(s.logs).toEqual({ '1:squats': 10 });
+  });
+});
