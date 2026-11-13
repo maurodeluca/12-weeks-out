@@ -123,6 +123,33 @@ export function formatAmount(n: number, unit: Unit): string {
   return s;
 }
 
+/**
+ * Combine a device's local state with what's stored in the cloud after signing in.
+ * Logs take the higher value per exercise (never lose progress either side logged).
+ * Notes: non-empty local notes win; otherwise fall back to the cloud note.
+ * Name/category: cloud wins only on a completely fresh local install.
+ */
+export function mergeState(local: State, cloud: Partial<State>): State {
+  const freshLocal = local.name === '' && Object.keys(local.logs).length === 0;
+
+  const logs = { ...local.logs };
+  for (const [k, v] of Object.entries(cloud.logs ?? {})) {
+    logs[k] = Math.max(logs[k] ?? 0, v);
+  }
+
+  const notes: Record<number, string> = { ...(cloud.notes ?? {}) };
+  for (const [k, v] of Object.entries(local.notes)) {
+    if (v.trim()) notes[Number(k)] = v;
+  }
+
+  return {
+    name: local.name || cloud.name || '',
+    category: freshLocal ? cloud.category ?? local.category : local.category,
+    logs,
+    notes,
+  };
+}
+
 export function exportState(state: State): string {
   return JSON.stringify({ app: '12-weeks-out', version: 1, state }, null, 2);
 }

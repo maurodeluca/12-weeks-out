@@ -8,6 +8,7 @@ import {
   initialState,
   isWeekComplete,
   logKey,
+  mergeState,
   overallFraction,
   rankFor,
   streak,
@@ -89,6 +90,39 @@ describe('currentWeekNumber', () => {
     expect(currentWeekNumber(new Date(2026, 10, 30))).toBe(12);
     expect(currentWeekNumber(new Date(2026, 11, 11, 20))).toBe(12);
     expect(currentWeekNumber(new Date(2026, 11, 12))).toBe(13);
+  });
+});
+
+describe('mergeState', () => {
+  it('takes the higher logged amount per exercise from either side', () => {
+    const local: State = { ...initialState, logs: { [logKey(1, 'run')]: 2, [logKey(1, 'squats')]: 100 } };
+    const cloud = { logs: { [logKey(1, 'run')]: 5, [logKey(2, 'row')]: 1000 } };
+    const merged = mergeState(local, cloud);
+    expect(merged.logs).toEqual({
+      [logKey(1, 'run')]: 5,
+      [logKey(1, 'squats')]: 100,
+      [logKey(2, 'row')]: 1000,
+    });
+  });
+
+  it('prefers non-empty local notes but fills in from the cloud otherwise', () => {
+    const local: State = { ...initialState, notes: { 1: 'local note', 2: '' } };
+    const cloud = { notes: { 1: 'cloud note', 2: 'cloud note 2', 3: 'cloud note 3' } };
+    expect(mergeState(local, cloud).notes).toEqual({ 1: 'local note', 2: 'cloud note 2', 3: 'cloud note 3' });
+  });
+
+  it('only takes cloud name/category on a completely fresh local install', () => {
+    const fresh: State = { ...initialState };
+    expect(mergeState(fresh, { name: 'Rocky', category: 'women' })).toMatchObject({
+      name: 'Rocky',
+      category: 'women',
+    });
+
+    const existing: State = { ...initialState, name: 'Apollo', category: 'men' };
+    expect(mergeState(existing, { name: 'Rocky', category: 'women' })).toMatchObject({
+      name: 'Apollo',
+      category: 'men',
+    });
   });
 });
 

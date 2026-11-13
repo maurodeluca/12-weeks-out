@@ -1,5 +1,7 @@
 import { useRef, useState } from 'react';
+import type { Session } from '@supabase/supabase-js';
 import { END_DATE, WEEKS } from '../data/programme';
+import { wipeMyCloudState } from '../lib/cloud';
 import {
   completedWeeks,
   exportState,
@@ -14,6 +16,7 @@ import {
   type Category,
   type State,
 } from '../lib/progress';
+import { Account } from './Account';
 
 interface Props {
   state: State;
@@ -21,6 +24,10 @@ interface Props {
   now: Date;
   update: (fn: (s: State) => State) => void;
   replace: (s: State) => void;
+  session: Session | null;
+  authLoading: boolean;
+  signInWithEmail: (email: string) => Promise<{ error: Error | null }>;
+  signOut: () => Promise<{ error: Error | null }>;
 }
 
 function daysToGo(now: Date): number {
@@ -30,7 +37,7 @@ function daysToGo(now: Date): number {
   return Math.round((end.getTime() - today.getTime()) / 86_400_000);
 }
 
-export function Rank({ state, currentWeek, now, update, replace }: Props) {
+export function Rank({ state, currentWeek, now, update, replace, session, authLoading, signInWithEmail, signOut }: Props) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [message, setMessage] = useState('');
   const fraction = overallFraction(state);
@@ -61,6 +68,7 @@ export function Rank({ state, currentWeek, now, update, replace }: Props) {
   const onReset = () => {
     if (window.confirm('Wipe ALL progress? This cannot be undone.')) {
       replace({ ...initialState, name: state.name, category: state.category });
+      if (session) wipeMyCloudState(session.user.id).catch(() => {});
       setMessage('Progress wiped. Fresh start.');
     }
   };
@@ -100,6 +108,8 @@ export function Rank({ state, currentWeek, now, update, replace }: Props) {
           {formatAmount(t.mi ?? 0, 'mi')} · {formatAmount(t.m ?? 0, 'm')} · {formatAmount(t.reps ?? 0, 'reps')} reps
         </p>
       </div>
+
+      <Account session={session} authLoading={authLoading} signInWithEmail={signInWithEmail} signOut={signOut} />
 
       <div className="card">
         <h3>Chain of command</h3>

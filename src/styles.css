@@ -198,4 +198,21 @@ textarea, .field input[type='text'] {
 }
 .tabbar button.on { color: #000; background: var(--gold); }
 
+.row input[type='email'] {
+  flex: 1; height: 44px; padding: 0 10px; font: inherit; color: var(--text);
+  background: #000; border: 1px solid #3a3a3a; border-radius: var(--radius);
+}
+.who { color: var(--gold); }
+
+.leaderboard { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+.leaderboard li {
+  display: grid; grid-template-columns: 28px 1fr auto auto auto; align-items: center; gap: 10px;
+  padding: 10px 12px; background: var(--panel); border: 1px solid #2a2a2a; border-radius: var(--radius);
+}
+.leaderboard li.mine { border-color: var(--gold); }
+.pos { font-family: var(--stencil); color: var(--gold); text-align: center; }
+.rank-tag { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+.lb-pct { font-weight: 600; }
+.lb-weeks { color: var(--muted); font-size: 0.85rem; }
+
 @media (prefers-reduced-motion: reduce) { .bar > span { transition: none; } }

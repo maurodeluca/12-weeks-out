@@ -7,9 +7,31 @@ Mobile-first, installable (PWA), works offline. Black, gold, stencil type — Ro
 
 - **Mission** – this week's exercises with targets, kit weights (men/women) and incline. Log with +/- steps, type an exact number, or hit **DONE**.
 - **Campaign** – all 12 weeks at a glance with progress per week.
+- **Squad** – company leaderboard (requires signing in; see Cloud sync below).
 - **Rank** – overall progress, rank (Recruit → Champion), week streak, days to go, total distance.
 - **Battle log** – notes per week (times, how it felt).
-- **Backup** – export / import progress as JSON. Data lives in the browser's `localStorage` only.
+- **Backup** – export / import progress as JSON. Data lives in the browser's `localStorage` by default, and also syncs to Supabase if signed in.
+
+## Cloud sync & leaderboard (Supabase)
+
+The app works fully offline/local with no account. Signing in (magic-link email, from the Rank tab)
+additionally syncs progress to Supabase so it follows you across devices and appears on the Squad leaderboard.
+
+**One-time setup** (already done for this repo's project, documented here for reference / if you fork it):
+
+1. Create a free project at [supabase.com](https://supabase.com).
+2. In the SQL Editor, run [`supabase/schema.sql`](supabase/schema.sql) once — creates `profiles`, `progress`,
+   `notes` tables with row-level security (everyone signed in can read names + progress for the leaderboard;
+   each person can only write their own rows; notes stay private).
+3. In **Authentication → URL Configuration**, set the Site URL and add Redirect URLs for every place the app
+   runs: e.g. `http://127.0.0.1:5173` for local dev and `https://maurodeluca.github.io/12-weeks-out/` for
+   production. Magic-link emails redirect back here.
+4. Copy **Settings → API → Project URL** and **Publishable key** into [`src/lib/supabaseClient.ts`](src/lib/supabaseClient.ts).
+   The publishable key is safe to commit — it's meant for client-side code; row-level security in `schema.sql`
+   is what actually protects data.
+
+> Free-tier Supabase rate-limits built-in auth emails (a handful per hour). Fine for a company-sized challenge;
+> configure custom SMTP in Supabase if you expect a lot of sign-ins at once.
 
 ## Develop
 

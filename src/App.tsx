@@ -1,21 +1,27 @@
 import { useMemo, useState } from 'react';
 import { PROGRAMME_NAME, PROGRAMME_TAGLINE, START_DATE, WEEKS } from './data/programme';
 import { Campaign } from './components/Campaign';
+import { Leaderboard } from './components/Leaderboard';
 import { Rank } from './components/Rank';
 import { WeekView } from './components/WeekView';
 import { clamp, currentWeekNumber } from './lib/progress';
+import { useAuth } from './lib/useAuth';
+import { useCloudSync } from './lib/useCloudSync';
 import { useProgress } from './lib/useProgress';
 
-type Tab = 'week' | 'campaign' | 'rank';
+type Tab = 'week' | 'campaign' | 'rank' | 'leaderboard';
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'week', label: 'Mission' },
   { id: 'campaign', label: 'Campaign' },
+  { id: 'leaderboard', label: 'Squad' },
   { id: 'rank', label: 'Rank' },
 ];
 
 export default function App() {
   const { state, update, replace } = useProgress();
+  const { session, loading: authLoading, signInWithEmail, signOut } = useAuth();
+  useCloudSync(session, state, update);
   const now = useMemo(() => new Date(), []);
   const currentWeek = currentWeekNumber(now);
   const [selected, setSelected] = useState(clamp(currentWeek, 1, WEEKS.length));
@@ -72,7 +78,20 @@ export default function App() {
             }}
           />
         )}
-        {tab === 'rank' && <Rank state={state} currentWeek={currentWeek} now={now} update={update} replace={replace} />}
+        {tab === 'rank' && (
+          <Rank
+            state={state}
+            currentWeek={currentWeek}
+            now={now}
+            update={update}
+            replace={replace}
+            session={session}
+            authLoading={authLoading}
+            signInWithEmail={signInWithEmail}
+            signOut={signOut}
+          />
+        )}
+        {tab === 'leaderboard' && <Leaderboard session={session} />}
       </main>
 
       <nav className="tabbar" aria-label="Main">
