@@ -39,9 +39,15 @@ scanner to click, so it isn't affected.
 2. In the SQL Editor, run [`supabase/schema.sql`](supabase/schema.sql) once — creates `profiles`, `progress`,
    `notes` tables with row-level security (everyone signed in can read names + progress for the leaderboard;
    each person can only write their own rows; notes stay private).
-3. In **Authentication → Email Templates → Magic Link**, add `{{ .Token }}` somewhere in the template body
-   (e.g. "Your sign-in code is {{ .Token }}") — Supabase's default template only renders the link, so without
-   this edit the 6-digit code never appears in the email.
+3. In **Authentication → Email Templates**, add `{{ .Token }}` to the body of **both**:
+   - **Magic Link** — used when an already-registered email signs in again
+   - **Confirm signup** — used the *first* time an email signs in (Supabase creates the account and sends a
+     "confirm your email" link by default). Easy to miss since it's a separate template from Magic Link, but
+     anyone signing in for the first time will get this one, not Magic Link — forgetting it is why the email
+     still shows a "verify email" link instead of a code.
+
+   Supabase's default templates only render a clickable link, so without this edit on both templates the
+   6-digit code never appears in the email.
 4. (Optional, defense-in-depth) In **Authentication → URL Configuration**, set Redirect URLs for every place
    the app runs, in case anyone clicks the link instead of typing the code.
 5. Copy **Settings → API → Project URL** and **Publishable key** into [`src/lib/supabaseClient.ts`](src/lib/supabaseClient.ts).
