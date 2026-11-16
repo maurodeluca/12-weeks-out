@@ -198,12 +198,10 @@ textarea, .field input[type='text'] {
 }
 .tabbar button.on { color: #000; background: var(--gold); }
 
-.row input[type='email'],
-.row input[type='text'] {
+.row input[type='email'] {
   flex: 1; height: 44px; padding: 0 10px; font: inherit; color: var(--text);
   background: #000; border: 1px solid #3a3a3a; border-radius: var(--radius);
 }
-.row { flex-wrap: wrap; }
 .who { color: var(--gold); }
 
 .leaderboard { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }

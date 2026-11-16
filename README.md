@@ -24,14 +24,8 @@ all come straight from these:
 
 ## Cloud sync & leaderboard (Supabase)
 
-The app works fully offline/local with no account. Signing in (email + 6-digit code, from the Rank tab)
+The app works fully offline/local with no account. Signing in (magic-link email, from the Rank tab)
 additionally syncs progress to Supabase so it follows you across devices and appears on the Squad leaderboard.
-
-Sign-in uses a **typed 6-digit code**, not a clickable magic link. This is deliberate: on a corporate network,
-email security scanners (Microsoft Defender, Proofpoint, etc.) often "click" links in incoming email to check
-them for phishing, which burns a magic link's single-use token before the real user opens it — causing an
-`otp_expired` / `access_denied` error the moment they click it themselves. A typed code has nothing for a
-scanner to click, so it isn't affected.
 
 **One-time setup** (already done for this repo's project, documented here for reference / if you fork it):
 
@@ -39,23 +33,34 @@ scanner to click, so it isn't affected.
 2. In the SQL Editor, run [`supabase/schema.sql`](supabase/schema.sql) once — creates `profiles`, `progress`,
    `notes` tables with row-level security (everyone signed in can read names + progress for the leaderboard;
    each person can only write their own rows; notes stay private).
-3. In **Authentication → Email Templates**, add `{{ .Token }}` to the body of **both**:
-   - **Magic Link** — used when an already-registered email signs in again
-   - **Confirm signup** — used the *first* time an email signs in (Supabase creates the account and sends a
-     "confirm your email" link by default). Easy to miss since it's a separate template from Magic Link, but
-     anyone signing in for the first time will get this one, not Magic Link — forgetting it is why the email
-     still shows a "verify email" link instead of a code.
+## Cloud sync & leaderboard (Supabase)
 
-   Supabase's default templates only render a clickable link, so without this edit on both templates the
-   6-digit code never appears in the email.
-4. (Optional, defense-in-depth) In **Authentication → URL Configuration**, set Redirect URLs for every place
-   the app runs, in case anyone clicks the link instead of typing the code.
-5. Copy **Settings → API → Project URL** and **Publishable key** into [`src/lib/supabaseClient.ts`](src/lib/supabaseClient.ts).
+The app works fully offline/local with no account. Signing in (magic-link email, from the Rank tab)
+additionally syncs progress to Supabase so it follows you across devices and appears on the Squad leaderboard.
+
+**One-time setup** (already done for this repo's project, documented here for reference / if you fork it):
+
+1. Create a free project at [supabase.com](https://supabase.com).
+2. In the SQL Editor, run [`supabase/schema.sql`](supabase/schema.sql) once — creates `profiles`, `progress`,
+   `notes` tables with row-level security (everyone signed in can read names + progress for the leaderboard;
+   each person can only write their own rows; notes stay private).
+3. In **Authentication → URL Configuration**, set the **Site URL** and add every place the app runs to
+   **Redirect URLs** — e.g. `http://127.0.0.1:5173/**` for local dev and
+   `https://maurodeluca.github.io/12-weeks-out/**` for production. This step is easy to skip but required:
+   without a matching entry here, Supabase silently ignores the app's redirect request and sends people to
+   its own default (`http://localhost:3000`) instead, which looks like a broken/expired link.
+4. Copy **Settings → API → Project URL** and **Publishable key** into [`src/lib/supabaseClient.ts`](src/lib/supabaseClient.ts).
    The publishable key is safe to commit — it's meant for client-side code; row-level security in `schema.sql`
    is what actually protects data.
 
-> Free-tier Supabase rate-limits built-in auth emails (a handful per hour). If you see "email rate limit
-> exceeded", wait ~an hour before retrying, or configure custom SMTP in Supabase for heavier use.
+> **On a corporate network**, some email security products (Microsoft Defender, Proofpoint, etc.) "click"
+> links in incoming email to scan them for phishing, which burns a magic link's single-use token before the
+> real recipient opens it — showing `otp_expired`/`access_denied` the moment they click it themselves. This
+> isn't an app or Supabase bug; it only shows up on networks with that kind of email scanning. On a normal
+> home/personal network it works as expected.
+
+> Free-tier Supabase rate-limits built-in auth emails (a handful per hour). Fine for a company-sized challenge;
+> configure custom SMTP in Supabase if you expect a lot of sign-ins at once.
 
 ## Develop
 

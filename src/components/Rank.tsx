@@ -29,7 +29,6 @@ interface Props {
   session: Session | null;
   authLoading: boolean;
   signInWithEmail: (email: string) => Promise<{ error: Error | null }>;
-  verifyCode: (email: string, token: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<{ error: Error | null }>;
   distanceUnit: DistanceUnit;
   setDistanceUnit: (unit: DistanceUnit) => void;
@@ -51,7 +50,6 @@ export function Rank({
   session,
   authLoading,
   signInWithEmail,
-  verifyCode,
   signOut,
   distanceUnit,
   setDistanceUnit,
@@ -127,13 +125,7 @@ export function Rank({
         </p>
       </div>
 
-      <Account
-        session={session}
-        authLoading={authLoading}
-        signInWithEmail={signInWithEmail}
-        verifyCode={verifyCode}
-        signOut={signOut}
-      />
+      <Account session={session} authLoading={authLoading} signInWithEmail={signInWithEmail} signOut={signOut} />
 
       <div className="card">
         <h3>Chain of command</h3>
