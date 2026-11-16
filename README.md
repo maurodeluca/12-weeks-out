@@ -33,25 +33,21 @@ additionally syncs progress to Supabase so it follows you across devices and app
 2. In the SQL Editor, run [`supabase/schema.sql`](supabase/schema.sql) once — creates `profiles`, `progress`,
    `notes` tables with row-level security (everyone signed in can read names + progress for the leaderboard;
    each person can only write their own rows; notes stay private).
-## Cloud sync & leaderboard (Supabase)
-
-The app works fully offline/local with no account. Signing in (magic-link email, from the Rank tab)
-additionally syncs progress to Supabase so it follows you across devices and appears on the Squad leaderboard.
-
-**One-time setup** (already done for this repo's project, documented here for reference / if you fork it):
-
-1. Create a free project at [supabase.com](https://supabase.com).
-2. In the SQL Editor, run [`supabase/schema.sql`](supabase/schema.sql) once — creates `profiles`, `progress`,
-   `notes` tables with row-level security (everyone signed in can read names + progress for the leaderboard;
-   each person can only write their own rows; notes stay private).
-3. In **Authentication → URL Configuration**, set the **Site URL** and add every place the app runs to
-   **Redirect URLs** — e.g. `http://127.0.0.1:5173/**` for local dev and
-   `https://maurodeluca.github.io/12-weeks-out/**` for production. This step is easy to skip but required:
-   without a matching entry here, Supabase silently ignores the app's redirect request and sends people to
-   its own default (`http://localhost:3000`) instead, which looks like a broken/expired link.
+3. In **Authentication → URL Configuration**, set the **Site URL** to
+   `https://maurodeluca.github.io/12-weeks-out/` and add `https://maurodeluca.github.io/12-weeks-out/**` to
+   **Redirect URLs**. This step is easy to skip but required: without a matching entry here, Supabase
+   silently ignores the app's redirect request and sends people to its own default (`http://localhost:3000`)
+   instead, which looks like a broken/expired link.
 4. Copy **Settings → API → Project URL** and **Publishable key** into [`src/lib/supabaseClient.ts`](src/lib/supabaseClient.ts).
    The publishable key is safe to commit — it's meant for client-side code; row-level security in `schema.sql`
    is what actually protects data.
+
+> Magic-link emails always redirect to the production URL (see `APP_URL` in
+> [`src/lib/useAuth.ts`](src/lib/useAuth.ts)), even when the sign-in request was made from local dev
+> (`127.0.0.1`). A local dev address only ever means "this exact machine", so it would silently fail (blank
+> page) if the link is opened on another device, like a phone checking email — which is how most people will
+> actually click it. This means testing sign-in locally still completes on the deployed production site, not
+> the dev server itself.
 
 > **On a corporate network**, some email security products (Microsoft Defender, Proofpoint, etc.) "click"
 > links in incoming email to scan them for phishing, which burns a magic link's single-use token before the
