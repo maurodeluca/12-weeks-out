@@ -204,15 +204,29 @@ textarea, .field input[type='text'] {
 }
 .who { color: var(--gold); }
 
-.leaderboard { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+.leaderboard { margin: 12px 0 0; padding: 0; list-style: none; display: grid; gap: 8px; }
 .leaderboard li {
-  display: grid; grid-template-columns: 28px 1fr auto auto auto; align-items: center; gap: 10px;
+  display: grid; grid-template-columns: 28px 1fr auto auto auto auto; align-items: center; gap: 10px;
   padding: 10px 12px; background: var(--panel); border: 1px solid #2a2a2a; border-radius: var(--radius);
 }
 .leaderboard li.mine { border-color: var(--gold); }
-.pos { font-family: var(--stencil); color: var(--gold); text-align: center; }
+.pos { font-family: var(--stencil); color: var(--gold); text-align: center; font-size: 1.1rem; }
 .rank-tag { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
 .lb-pct { font-weight: 600; }
 .lb-weeks { color: var(--muted); font-size: 0.85rem; }
+.lb-active { color: var(--muted); font-size: 0.75rem; text-align: right; min-width: 64px; }
+
+.sync-status { margin: 8px 0 0; font-size: 0.8rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); }
+.sync-status.synced { color: var(--gold); }
+.sync-status.offline, .sync-status.error { color: var(--red); }
+
+.coach-table-wrap { overflow-x: auto; margin-top: 10px; }
+.coach-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+.coach-table th, .coach-table td { padding: 8px 10px; text-align: left; border-bottom: 1px solid #2a2a2a; white-space: nowrap; }
+.coach-table th {
+  color: var(--gold); text-transform: uppercase; letter-spacing: 0.06em; font-size: 0.75rem; cursor: pointer;
+  user-select: none;
+}
+.coach-table tr.mine td { color: var(--gold); }
 
 @media (prefers-reduced-motion: reduce) { .bar > span { transition: none; } }

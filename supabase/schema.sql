@@ -26,9 +26,25 @@ create table if not exists public.notes (
   primary key (user_id, week)
 );
 
+-- Singleton row (id = 1) holding Week 12's details, revealed by the coach as the instructor announces them.
+create table if not exists public.week12_details (
+  id int primary key default 1 check (id = 1),
+  location text not null default '',
+  weight text not null default '',
+  distance text not null default '',
+  gradient text not null default '',
+  updated_at timestamptz not null default now()
+);
+insert into public.week12_details (id) values (1) on conflict (id) do nothing;
+
 alter table public.profiles enable row level security;
 alter table public.progress enable row level security;
 alter table public.notes enable row level security;
+alter table public.week12_details enable row level security;
+
+-- Coach/admin emails allowed to edit Week 12 details. Add more as a comma-separated array entry.
+-- Keep this in sync with COACH_EMAILS in src/lib/coach.ts (that's only a client-side UI gate;
+-- this is what actually enforces it).
 
 -- Everyone signed in can read names/categories (needed to render the leaderboard),
 -- but can only write their own row.
@@ -73,3 +89,18 @@ create policy "users manage their own notes"
   to authenticated
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
+
+-- Week 12 details are public (no sign-in needed, matches the app working fully offline/local),
+-- but only the coach email(s) can write them.
+drop policy if exists "week12 details are publicly readable" on public.week12_details;
+create policy "week12 details are publicly readable"
+  on public.week12_details for select
+  to anon, authenticated
+  using (true);
+
+drop policy if exists "only coaches can edit week12 details" on public.week12_details;
+create policy "only coaches can edit week12 details"
+  on public.week12_details for all
+  to authenticated
+  using ((auth.jwt() ->> 'email') = any (array['maurodeluca@live.ie']))
+  with check ((auth.jwt() ->> 'email') = any (array['maurodeluca@live.ie']));

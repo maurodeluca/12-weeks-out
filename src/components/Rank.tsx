@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { END_DATE, WEEKS } from '../data/programme';
 import { wipeMyCloudState } from '../lib/cloud';
+import { downloadCertificate } from '../lib/certificate';
 import {
   completedWeeks,
   exportState,
@@ -18,6 +19,7 @@ import {
   type DistanceUnit,
   type State,
 } from '../lib/progress';
+import type { SyncStatus } from '../lib/useCloudSync';
 import { Account } from './Account';
 
 interface Props {
@@ -30,6 +32,7 @@ interface Props {
   authLoading: boolean;
   signInWithEmail: (email: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<{ error: Error | null }>;
+  syncStatus: SyncStatus;
   distanceUnit: DistanceUnit;
   setDistanceUnit: (unit: DistanceUnit) => void;
 }
@@ -51,6 +54,7 @@ export function Rank({
   authLoading,
   signInWithEmail,
   signOut,
+  syncStatus,
   distanceUnit,
   setDistanceUnit,
 }: Props) {
@@ -125,7 +129,25 @@ export function Rank({
         </p>
       </div>
 
-      <Account session={session} authLoading={authLoading} signInWithEmail={signInWithEmail} signOut={signOut} />
+      <Account
+        session={session}
+        authLoading={authLoading}
+        signInWithEmail={signInWithEmail}
+        signOut={signOut}
+        syncStatus={syncStatus}
+      />
+
+      {completedWeeks(state) === WEEKS.length && (
+        <div className="card hero">
+          <h3>Challenge complete</h3>
+          <p className="meta">You finished all 12 weeks. Download your certificate.</p>
+          <div className="row">
+            <button className="btn" onClick={() => downloadCertificate(state.name, t.mi ?? 0, t.reps ?? 0)}>
+              Download certificate
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="card">
         <h3>Chain of command</h3>

@@ -1,15 +1,25 @@
 import { useEffect, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { fetchLeaderboard, type LeaderboardEntry } from '../lib/cloud';
-import { completedWeeks, overallFraction, rankFor } from '../lib/progress';
+import { formatRelative, medalFor } from '../lib/format';
+import { completedWeeks, overallFraction, rankFor, type Category } from '../lib/progress';
 
 interface Props {
   session: Session | null;
 }
 
+type CategoryFilter = 'all' | Category;
+
+const FILTERS: { id: CategoryFilter; label: string }[] = [
+  { id: 'all', label: 'All' },
+  { id: 'men', label: 'Men' },
+  { id: 'women', label: 'Women' },
+];
+
 export function Leaderboard({ session }: Props) {
   const [entries, setEntries] = useState<LeaderboardEntry[] | null>(null);
   const [error, setError] = useState('');
+  const [filter, setFilter] = useState<CategoryFilter>('all');
 
   useEffect(() => {
     if (!session) return;
@@ -36,12 +46,28 @@ export function Leaderboard({ session }: Props) {
   }
 
   const ranked = (entries ?? [])
+    .filter((e) => filter === 'all' || e.state.category === filter)
     .map((e) => ({ ...e, fraction: overallFraction(e.state) }))
     .sort((a, b) => b.fraction - a.fraction);
 
   return (
     <section>
       <h2 className="section-title">Leaderboard</h2>
+
+      <div className="seg" role="radiogroup" aria-label="Filter by kit weight">
+        {FILTERS.map((f) => (
+          <button
+            key={f.id}
+            role="radio"
+            aria-checked={filter === f.id}
+            className={filter === f.id ? 'on' : ''}
+            onClick={() => setFilter(f.id)}
+          >
+            {f.label}
+          </button>
+        ))}
+      </div>
+
       {error && <p className="message">{error}</p>}
       {!error && entries === null && <p className="meta">Loading…</p>}
       {!error && entries !== null && ranked.length === 0 && <p className="meta">Nobody has logged progress yet.</p>}
@@ -50,7 +76,7 @@ export function Leaderboard({ session }: Props) {
           const mine = e.userId === session.user.id;
           return (
             <li key={e.userId} className={mine ? 'mine' : ''}>
-              <span className="pos">{i + 1}</span>
+              <span className="pos">{medalFor(i + 1)}</span>
               <span className="who">
                 {e.state.name}
                 {mine ? ' (you)' : ''}
@@ -58,6 +84,7 @@ export function Leaderboard({ session }: Props) {
               <span className="rank-tag">{rankFor(e.fraction).name}</span>
               <span className="lb-pct">{Math.round(e.fraction * 100)}%</span>
               <span className="lb-weeks">{completedWeeks(e.state)}/12</span>
+              <span className="lb-active">{formatRelative(e.lastActive)}</span>
             </li>
           );
         })}

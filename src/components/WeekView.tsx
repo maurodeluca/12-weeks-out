@@ -1,4 +1,5 @@
 import { WEEK_12_TBA, WEEKS, type Week } from '../data/programme';
+import type { Week12Details } from '../lib/cloud';
 import {
   getDone,
   isWeekComplete,
@@ -16,12 +17,13 @@ interface Props {
   state: State;
   currentWeek: number;
   distanceUnit: DistanceUnit;
+  week12Details: Week12Details | null;
   update: (fn: (s: State) => State) => void;
 }
 
 const fmt = (d: Date) => d.toLocaleDateString('en-IE', { day: 'numeric', month: 'short' });
 
-export function WeekView({ week, state, currentWeek, distanceUnit, update }: Props) {
+export function WeekView({ week, state, currentWeek, distanceUnit, week12Details, update }: Props) {
   const start = weekStart(week.week);
   const end = weekEnd(week.week);
   const pct = Math.round(weekFraction(state, week) * 100);
@@ -52,11 +54,17 @@ export function WeekView({ week, state, currentWeek, distanceUnit, update }: Pro
 
       {week.week === WEEKS.length && (
         <div className="tba">
-          <p>Intel incoming. The instructor hasn't revealed the details yet:</p>
+          <p>Intel incoming. Here's what the instructor has revealed so far:</p>
           <ul>
-            {WEEK_12_TBA.map((t) => (
-              <li key={t}>{t}: unknown</li>
-            ))}
+            {WEEK_12_TBA.map((label) => {
+              const key = label.toLowerCase() as keyof Week12Details;
+              const value = week12Details?.[key]?.trim();
+              return (
+                <li key={label}>
+                  {label}: {value || 'unknown'}
+                </li>
+              );
+            })}
           </ul>
         </div>
       )}

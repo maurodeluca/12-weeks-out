@@ -1,14 +1,24 @@
 import { useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
+import type { SyncStatus } from '../lib/useCloudSync';
 
 interface Props {
   session: Session | null;
   authLoading: boolean;
   signInWithEmail: (email: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<{ error: Error | null }>;
+  syncStatus: SyncStatus;
 }
 
-export function Account({ session, authLoading, signInWithEmail, signOut }: Props) {
+const STATUS_LABEL: Record<SyncStatus, string> = {
+  idle: '',
+  syncing: 'Syncing…',
+  synced: 'Synced ✓',
+  offline: 'Offline — saved locally, will sync when back online',
+  error: 'Sync error — will retry on your next change',
+};
+
+export function Account({ session, authLoading, signInWithEmail, signOut, syncStatus }: Props) {
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
   const [message, setMessage] = useState('');
@@ -38,6 +48,11 @@ export function Account({ session, authLoading, signInWithEmail, signOut }: Prop
             Signed in as <strong className="who">{session.user.email}</strong>. Your progress syncs across
             devices and counts on the leaderboard.
           </p>
+          {syncStatus !== 'idle' && (
+            <p className={`sync-status ${syncStatus}`} role="status">
+              {STATUS_LABEL[syncStatus]}
+            </p>
+          )}
           <div className="row">
             <button className="btn" onClick={() => signOut()}>
               Sign out

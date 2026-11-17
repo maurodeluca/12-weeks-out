@@ -17,8 +17,10 @@ all come straight from these:
 
 - **Mission** – this week's exercises with targets, kit weights (men/women) and incline. Log with +/- steps, type an exact number, or hit **DONE**.
 - **Campaign** – all 12 weeks at a glance with progress per week.
-- **Squad** – company leaderboard (requires signing in; see Cloud sync below).
-- **Rank** – overall progress, rank (Recruit → Champion), week streak, days to go, total distance.
+- **Squad** – company leaderboard (requires signing in; see Cloud sync below), with medal icons for the top 3, a Men/Women filter, and each person's last-active date.
+- **Rank** – overall progress, rank (Recruit → Champion), week streak, days to go, total distance, and a sync status (Synced / Syncing / Offline) once signed in.
+- **Certificate** – once all 12 weeks are complete, download a themed "Challenge Complete" certificate (PNG) from the Rank tab.
+- **Coach** – a tab visible only to coach/admin emails (see below), showing every participant's rank/%/weeks/last-active, sortable by column, plus a form to reveal Week 12's details.
 - **Battle log** – notes per week (times, how it felt).
 - **Backup** – export / import progress as JSON. Data lives in the browser's `localStorage` by default, and also syncs to Supabase if signed in.
 
@@ -58,6 +60,22 @@ additionally syncs progress to Supabase so it follows you across devices and app
 > Free-tier Supabase rate-limits built-in auth emails (a handful per hour). Fine for a company-sized challenge;
 > configure custom SMTP in Supabase if you expect a lot of sign-ins at once.
 
+## Coach view & revealing Week 12
+
+One tab ("Coach") is hidden from everyone except the email(s) listed in `COACH_EMAILS` in
+[`src/lib/coach.ts`](src/lib/coach.ts). That's only a client-side UI gate — the real enforcement is the
+matching RLS policy in `schema.sql` on the `week12_details` table, which checks the same email(s) against the
+signed-in JWT. **Update both places** if you add or change who has coach access, then re-run `schema.sql`'s
+policy section in the SQL Editor (it's safe to re-run the whole file any time).
+
+The coach view also reads the same `profiles`/`progress` data the public leaderboard already reads — RLS makes
+progress readable by anyone signed in (that's what powers the leaderboard), so the coach view isn't exposing
+new data, just a richer breakdown of it. Notes stay private either way.
+
+Week 12's location/weight/distance/gradient are stored in the `week12_details` table (one row, publicly
+readable, no sign-in needed — it's just event logistics, not personal data) and editable only from the Coach
+tab. No code change or redeploy needed to reveal them as the instructor announces details.
+
 ## Develop
 
 ```sh
@@ -71,9 +89,12 @@ npm run build      # typecheck + production build into dist/
 
 ## Updating the programme
 
-All challenge data lives in [`src/data/programme.ts`](src/data/programme.ts). When the instructor reveals
-**Week 12 – The Long Walk** (location, weight, distance, gradient), update the `WEEKS` entry and `WEEK_12_TBA` there.
-Progress is keyed by week + exercise `id`, so keep ids stable to avoid losing people's logs.
+All challenge data lives in [`src/data/programme.ts`](src/data/programme.ts). Progress is keyed by week +
+exercise `id`, so keep ids stable to avoid losing people's logs.
+
+**Week 12 – The Long Walk**'s details (location, weight, distance, gradient) don't need a code change —
+reveal them from the Coach tab as the instructor announces them (see above). `WEEK_12_TBA` in `programme.ts`
+only defines the field *labels* shown; the actual values come from Supabase.
 
 Notes on the data: "inc 6 / inc 8" on ruck sessions is shown as the incline from the original sheet.
 The programme runs from Monday 14 Sept; week 12 runs through 11 Dec.
