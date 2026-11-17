@@ -195,8 +195,14 @@ textarea, .field input[type='text'] {
 .tabbar button {
   flex: 1; height: 60px; background: transparent; color: var(--muted); border: 0;
   font-family: var(--stencil); font-size: 1.05rem; letter-spacing: 0.08em; text-transform: uppercase;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 2px;
 }
 .tabbar button.on { color: #000; background: var(--gold); }
+
+/* 5 tabs (Coach added) need a touch less room per label on narrow phones. */
+@media (max-width: 480px) {
+  .tabbar button { font-size: 0.76rem; letter-spacing: 0; }
+}
 
 .row input[type='email'] {
   flex: 1; height: 44px; padding: 0 10px; font: inherit; color: var(--text);
