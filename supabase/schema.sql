@@ -42,6 +42,15 @@ alter table public.progress enable row level security;
 alter table public.notes enable row level security;
 alter table public.week12_details enable row level security;
 
+-- RLS policies only ever *restrict* rows for a role that can already query the table at all -
+-- they don't grant base table access by themselves. Without these grants, Postgres rejects every
+-- query with "permission denied for table ..." before RLS even gets a chance to run.
+grant select, insert, update on public.profiles to authenticated;
+grant select, insert, update, delete on public.progress to authenticated;
+grant select, insert, update, delete on public.notes to authenticated;
+grant select on public.week12_details to anon, authenticated;
+grant insert, update on public.week12_details to authenticated;
+
 -- Coach/admin emails allowed to edit Week 12 details. Add more as a comma-separated array entry.
 -- Keep this in sync with COACH_EMAILS in src/lib/coach.ts (that's only a client-side UI gate;
 -- this is what actually enforces it).
