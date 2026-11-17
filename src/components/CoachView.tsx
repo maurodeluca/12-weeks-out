@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { WEEKS } from '../data/programme';
 import {
+  errorMessage,
   fetchLeaderboard,
   fetchWeek12Details,
   upsertWeek12Details,
@@ -36,7 +37,7 @@ export function CoachView({ session }: Props) {
         if (!cancelled) setEntries(rows);
       })
       .catch((e) => {
-        if (!cancelled) setError(e instanceof Error ? e.message : 'Could not load participants.');
+        if (!cancelled) setError(errorMessage(e, 'Could not load participants.'));
       });
     fetchWeek12Details().then((d) => {
       if (!cancelled && d) setDetails(d);
@@ -79,7 +80,7 @@ export function CoachView({ session }: Props) {
       await upsertWeek12Details(details);
       setSaveMessage('Saved — everyone sees this on Week 12 now.');
     } catch (e) {
-      setSaveMessage(e instanceof Error ? e.message : 'Could not save.');
+      setSaveMessage(errorMessage(e, 'Could not save.'));
     } finally {
       setSaving(false);
     }

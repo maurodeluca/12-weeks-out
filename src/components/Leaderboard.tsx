@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
-import { fetchLeaderboard, type LeaderboardEntry } from '../lib/cloud';
+import { errorMessage, fetchLeaderboard, type LeaderboardEntry } from '../lib/cloud';
 import { formatRelative, medalFor } from '../lib/format';
 import { completedWeeks, overallFraction, rankFor, type Category } from '../lib/progress';
 
@@ -29,7 +29,7 @@ export function Leaderboard({ session }: Props) {
         if (!cancelled) setEntries(rows);
       })
       .catch((e) => {
-        if (!cancelled) setError(e instanceof Error ? e.message : 'Could not load the leaderboard.');
+        if (!cancelled) setError(errorMessage(e, 'Could not load the leaderboard.'));
       });
     return () => {
       cancelled = true;

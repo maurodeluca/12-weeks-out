@@ -16,6 +16,19 @@ export interface Week12Details {
 
 const nowIso = () => new Date().toISOString();
 
+/**
+ * Extracts a human-readable message from any thrown value. Supabase/Postgrest errors are plain
+ * objects (e.g. `{ message, code, details, hint }`), not `instanceof Error`, so a naive
+ * `e instanceof Error` check silently swallows the real reason and always falls back.
+ */
+export function errorMessage(e: unknown, fallback: string): string {
+  if (e instanceof Error) return e.message;
+  if (e && typeof e === 'object' && 'message' in e && typeof (e as { message: unknown }).message === 'string') {
+    return (e as { message: string }).message;
+  }
+  return fallback;
+}
+
 /** Pulls this user's saved profile/progress/notes from Supabase, or null if they have none yet. */
 export async function fetchMyState(userId: string): Promise<Partial<State> | null> {
   const [{ data: profile }, { data: progress }, { data: notes }] = await Promise.all([
