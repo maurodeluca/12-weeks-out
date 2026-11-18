@@ -14,6 +14,12 @@ export interface Week12Details {
   gradient: string;
 }
 
+export interface Nudge {
+  id: number;
+  message: string;
+  createdAt: string;
+}
+
 const nowIso = () => new Date().toISOString();
 
 /**
@@ -138,5 +144,55 @@ export async function upsertWeek12Details(details: Week12Details): Promise<void>
   const { error } = await supabase
     .from('week12_details')
     .upsert({ id: 1, ...details, updated_at: nowIso() });
+  if (error) throw error;
+}
+
+/** Everyone's total cheers received, keyed by user id. */
+export async function fetchCheerCounts(): Promise<Record<string, number>> {
+  const { data, error } = await supabase.from('cheers').select('to_user_id');
+  if (error) throw error;
+  const counts: Record<string, number> = {};
+  for (const row of data ?? []) counts[row.to_user_id] = (counts[row.to_user_id] ?? 0) + 1;
+  return counts;
+}
+
+/** Who I've already cheered today (same-day repeats are blocked by a unique index, this is just for the UI). */
+export async function fetchCheersSentToday(fromUserId: string): Promise<Set<string>> {
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const { data, error } = await supabase
+    .from('cheers')
+    .select('to_user_id')
+    .eq('from_user_id', fromUserId)
+    .gte('created_at', todayStart.toISOString());
+  if (error) throw error;
+  return new Set((data ?? []).map((r) => r.to_user_id));
+}
+
+/** Throws if this pair has already cheered today (unique index on supabase/schema.sql's cheers table). */
+export async function sendCheer(fromUserId: string, toUserId: string): Promise<void> {
+  const { error } = await supabase.from('cheers').insert({ from_user_id: fromUserId, to_user_id: toUserId });
+  if (error) throw error;
+}
+
+/** Coach-only, enforced by RLS. Shows up as a dismissible banner next time the recipient opens the app. */
+export async function sendNudge(toUserId: string, message: string): Promise<void> {
+  const { error } = await supabase.from('nudges').insert({ to_user_id: toUserId, message });
+  if (error) throw error;
+}
+
+export async function fetchUnreadNudges(userId: string): Promise<Nudge[]> {
+  const { data, error } = await supabase
+    .from('nudges')
+    .select('id, message, created_at')
+    .eq('to_user_id', userId)
+    .is('read_at', null)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []).map((r) => ({ id: r.id, message: r.message, createdAt: r.created_at }));
+}
+
+export async function markNudgeRead(id: number): Promise<void> {
+  const { error } = await supabase.from('nudges').update({ read_at: nowIso() }).eq('id', id);
   if (error) throw error;
 }

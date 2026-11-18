@@ -4,6 +4,7 @@ import { Campaign } from './components/Campaign';
 import { CoachView } from './components/CoachView';
 import { Leaderboard } from './components/Leaderboard';
 import { Rank } from './components/Rank';
+import { SignInNudge } from './components/SignInNudge';
 import { WeekView } from './components/WeekView';
 import { fetchWeek12Details, type Week12Details } from './lib/cloud';
 import { isCoach } from './lib/coach';
@@ -11,6 +12,7 @@ import { clamp, currentWeekNumber } from './lib/progress';
 import { useAuth } from './lib/useAuth';
 import { useCloudSync } from './lib/useCloudSync';
 import { useDistanceUnit } from './lib/useDistanceUnit';
+import { useNudges } from './lib/useNudges';
 import { useProgress } from './lib/useProgress';
 
 type Tab = 'week' | 'campaign' | 'rank' | 'leaderboard' | 'coach';
@@ -27,6 +29,7 @@ export default function App() {
   const { session, loading: authLoading, signInWithEmail, signOut } = useAuth();
   const [distanceUnit, setDistanceUnit] = useDistanceUnit();
   const syncStatus = useCloudSync(session, state, update);
+  const { nudges, dismiss: dismissNudge } = useNudges(session);
   const now = useMemo(() => new Date(), []);
   const currentWeek = currentWeekNumber(now);
   const [selected, setSelected] = useState(clamp(currentWeek, 1, WEEKS.length));
@@ -58,9 +61,21 @@ export default function App() {
       )}
       {currentWeek > WEEKS.length && <p className="banner">The programme is over. Wear your rank with pride.</p>}
 
+      {nudges.map((n) => (
+        <div className="coach-nudge" key={n.id}>
+          <p>
+            <strong>Coach:</strong> {n.message}
+          </p>
+          <button onClick={() => dismissNudge(n.id)} aria-label="Dismiss">
+            ×
+          </button>
+        </div>
+      ))}
+
       <main>
         {tab === 'week' && (
           <>
+            {!session && !authLoading && <SignInNudge onGoToRank={() => setTab('rank')} />}
             <nav className="week-nav" aria-label="Choose week">
               <button onClick={() => setSelected((s) => Math.max(1, s - 1))} disabled={selected === 1} aria-label="Previous week">
                 ‹
@@ -87,15 +102,18 @@ export default function App() {
           </>
         )}
         {tab === 'campaign' && (
-          <Campaign
-            state={state}
-            currentWeek={currentWeek}
-            selected={selected}
-            onSelect={(w) => {
-              setSelected(w);
-              setTab('week');
-            }}
-          />
+          <>
+            {!session && !authLoading && <SignInNudge onGoToRank={() => setTab('rank')} />}
+            <Campaign
+              state={state}
+              currentWeek={currentWeek}
+              selected={selected}
+              onSelect={(w) => {
+                setSelected(w);
+                setTab('week');
+              }}
+            />
+          </>
         )}
         {tab === 'rank' && (
           <Rank

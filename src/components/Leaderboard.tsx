@@ -1,6 +1,13 @@
 import { useEffect, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
-import { errorMessage, fetchLeaderboard, type LeaderboardEntry } from '../lib/cloud';
+import {
+  errorMessage,
+  fetchCheerCounts,
+  fetchCheersSentToday,
+  fetchLeaderboard,
+  sendCheer,
+  type LeaderboardEntry,
+} from '../lib/cloud';
 import { formatRelative, medalFor } from '../lib/format';
 import { completedWeeks, overallFraction, rankFor, type Category } from '../lib/progress';
 
@@ -20,6 +27,9 @@ export function Leaderboard({ session }: Props) {
   const [entries, setEntries] = useState<LeaderboardEntry[] | null>(null);
   const [error, setError] = useState('');
   const [filter, setFilter] = useState<CategoryFilter>('all');
+  const [cheerCounts, setCheerCounts] = useState<Record<string, number>>({});
+  const [cheeredToday, setCheeredToday] = useState<Set<string>>(new Set());
+  const [cheerError, setCheerError] = useState('');
 
   useEffect(() => {
     if (!session) return;
@@ -31,6 +41,12 @@ export function Leaderboard({ session }: Props) {
       .catch((e) => {
         if (!cancelled) setError(errorMessage(e, 'Could not load the leaderboard.'));
       });
+    fetchCheerCounts().then((c) => {
+      if (!cancelled) setCheerCounts(c);
+    });
+    fetchCheersSentToday(session.user.id).then((s) => {
+      if (!cancelled) setCheeredToday(s);
+    });
     return () => {
       cancelled = true;
     };
@@ -44,6 +60,23 @@ export function Leaderboard({ session }: Props) {
       </section>
     );
   }
+
+  const onCheer = async (toUserId: string) => {
+    setCheerError('');
+    setCheeredToday((s) => new Set(s).add(toUserId));
+    setCheerCounts((c) => ({ ...c, [toUserId]: (c[toUserId] ?? 0) + 1 }));
+    try {
+      await sendCheer(session.user.id, toUserId);
+    } catch (e) {
+      setCheeredToday((s) => {
+        const next = new Set(s);
+        next.delete(toUserId);
+        return next;
+      });
+      setCheerCounts((c) => ({ ...c, [toUserId]: Math.max(0, (c[toUserId] ?? 1) - 1) }));
+      setCheerError(errorMessage(e, "Couldn't send that cheer."));
+    }
+  };
 
   const ranked = (entries ?? [])
     .filter((e) => filter === 'all' || e.state.category === filter)
@@ -69,22 +102,41 @@ export function Leaderboard({ session }: Props) {
       </div>
 
       {error && <p className="message">{error}</p>}
+      {cheerError && <p className="message">{cheerError}</p>}
       {!error && entries === null && <p className="meta">Loading…</p>}
       {!error && entries !== null && ranked.length === 0 && <p className="meta">Nobody has logged progress yet.</p>}
       <ol className="leaderboard">
         {ranked.map((e, i) => {
           const mine = e.userId === session.user.id;
+          const cheered = cheeredToday.has(e.userId);
+          const cheers = cheerCounts[e.userId] ?? 0;
           return (
             <li key={e.userId} className={mine ? 'mine' : ''}>
-              <span className="pos">{medalFor(i + 1)}</span>
-              <span className="who">
-                {e.state.name}
-                {mine ? ' (you)' : ''}
-              </span>
-              <span className="rank-tag">{rankFor(e.fraction).name}</span>
-              <span className="lb-pct">{Math.round(e.fraction * 100)}%</span>
-              <span className="lb-weeks">{completedWeeks(e.state)}/12</span>
-              <span className="lb-active">{formatRelative(e.lastActive)}</span>
+              <div className="lb-top">
+                <span className="pos">{medalFor(i + 1)}</span>
+                <span className="who">
+                  {e.state.name}
+                  {mine ? ' (you)' : ''}
+                </span>
+                {mine ? (
+                  cheers > 0 && <span className="lb-cheers">👏 {cheers}</span>
+                ) : (
+                  <button
+                    className={`cheer${cheered ? ' on' : ''}`}
+                    disabled={cheered}
+                    onClick={() => onCheer(e.userId)}
+                    aria-label={cheered ? `You cheered ${e.state.name} today` : `Cheer ${e.state.name}`}
+                  >
+                    👏{cheers > 0 ? ` ${cheers}` : ''}
+                  </button>
+                )}
+              </div>
+              <div className="lb-meta">
+                <span className="rank-tag">{rankFor(e.fraction).name}</span>
+                <span className="lb-pct">{Math.round(e.fraction * 100)}%</span>
+                <span className="lb-weeks">{completedWeeks(e.state)}/12</span>
+                <span className="lb-active">{formatRelative(e.lastActive)}</span>
+              </div>
             </li>
           );
         })}

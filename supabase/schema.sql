@@ -37,10 +37,34 @@ create table if not exists public.week12_details (
 );
 insert into public.week12_details (id) values (1) on conflict (id) do nothing;
 
+-- One cheer per (sender, recipient, day) - the unique index below enforces that, not a CHECK,
+-- since "once per day" needs to compare against other rows.
+create table if not exists public.cheers (
+  id bigint generated always as identity primary key,
+  from_user_id uuid not null references auth.users (id) on delete cascade,
+  to_user_id uuid not null references auth.users (id) on delete cascade,
+  created_at timestamptz not null default now(),
+  check (from_user_id <> to_user_id)
+);
+create unique index if not exists cheers_once_per_day
+  on public.cheers (from_user_id, to_user_id, (created_at::date));
+
+-- Coach -> participant reminders. In-app only (no backend for push/SMS/email sending) - shown as
+-- a dismissible banner next time the recipient opens the app while signed in.
+create table if not exists public.nudges (
+  id bigint generated always as identity primary key,
+  to_user_id uuid not null references auth.users (id) on delete cascade,
+  message text not null check (char_length(message) between 1 and 300),
+  created_at timestamptz not null default now(),
+  read_at timestamptz
+);
+
 alter table public.profiles enable row level security;
 alter table public.progress enable row level security;
 alter table public.notes enable row level security;
 alter table public.week12_details enable row level security;
+alter table public.cheers enable row level security;
+alter table public.nudges enable row level security;
 
 -- RLS policies only ever *restrict* rows for a role that can already query the table at all -
 -- they don't grant base table access by themselves. Without these grants, Postgres rejects every
@@ -50,6 +74,8 @@ grant select, insert, update, delete on public.progress to authenticated;
 grant select, insert, update, delete on public.notes to authenticated;
 grant select on public.week12_details to anon, authenticated;
 grant insert, update on public.week12_details to authenticated;
+grant select, insert on public.cheers to authenticated;
+grant select, insert, update on public.nudges to authenticated;
 
 -- Coach/admin emails allowed to edit Week 12 details. Add more as a comma-separated array entry.
 -- Keep this in sync with COACH_EMAILS in src/lib/coach.ts (that's only a client-side UI gate;
@@ -112,4 +138,38 @@ create policy "only coaches can edit week12 details"
   on public.week12_details for all
   to authenticated
   using ((auth.jwt() ->> 'email') = any (array['maurodeluca@live.ie']))
+  with check ((auth.jwt() ->> 'email') = any (array['maurodeluca@live.ie']));
+
+-- Cheer counts are visible to everyone signed in (same openness as progress, for the leaderboard),
+-- but you can only ever send a cheer as yourself, and never to yourself.
+drop policy if exists "cheers are readable by signed-in users" on public.cheers;
+create policy "cheers are readable by signed-in users"
+  on public.cheers for select
+  to authenticated
+  using (true);
+
+drop policy if exists "users send cheers as themselves" on public.cheers;
+create policy "users send cheers as themselves"
+  on public.cheers for insert
+  to authenticated
+  with check (auth.uid() = from_user_id and to_user_id <> auth.uid());
+
+-- Nudges are private: only the recipient can read/mark them read. Only the coach can send one.
+drop policy if exists "users read and ack their own nudges" on public.nudges;
+create policy "users read and ack their own nudges"
+  on public.nudges for select
+  to authenticated
+  using (auth.uid() = to_user_id);
+
+drop policy if exists "users mark their own nudges read" on public.nudges;
+create policy "users mark their own nudges read"
+  on public.nudges for update
+  to authenticated
+  using (auth.uid() = to_user_id)
+  with check (auth.uid() = to_user_id);
+
+drop policy if exists "only coaches can send nudges" on public.nudges;
+create policy "only coaches can send nudges"
+  on public.nudges for insert
+  to authenticated
   with check ((auth.jwt() ->> 'email') = any (array['maurodeluca@live.ie']));

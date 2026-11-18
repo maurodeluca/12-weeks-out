@@ -5,6 +5,7 @@ import {
   errorMessage,
   fetchLeaderboard,
   fetchWeek12Details,
+  sendNudge,
   upsertWeek12Details,
   type LeaderboardEntry,
   type Week12Details,
@@ -29,6 +30,11 @@ export function CoachView({ session }: Props) {
   const [details, setDetails] = useState<Week12Details>(EMPTY_DETAILS);
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState('');
+
+  const [nudgeTarget, setNudgeTarget] = useState<{ userId: string; name: string } | null>(null);
+  const [nudgeMessage, setNudgeMessage] = useState('');
+  const [sendingNudge, setSendingNudge] = useState(false);
+  const [nudgeFeedback, setNudgeFeedback] = useState('');
 
   useEffect(() => {
     let cancelled = false;
@@ -86,6 +92,22 @@ export function CoachView({ session }: Props) {
     }
   };
 
+  const onSendNudge = async () => {
+    if (!nudgeTarget || !nudgeMessage.trim()) return;
+    setSendingNudge(true);
+    setNudgeFeedback('');
+    try {
+      await sendNudge(nudgeTarget.userId, nudgeMessage.trim());
+      setNudgeFeedback(`Sent to ${nudgeTarget.name || 'them'} — they'll see it next time they open the app.`);
+      setNudgeMessage('');
+      setNudgeTarget(null);
+    } catch (e) {
+      setNudgeFeedback(errorMessage(e, 'Could not send that nudge.'));
+    } finally {
+      setSendingNudge(false);
+    }
+  };
+
   return (
     <section>
       <h2 className="section-title">Coach</h2>
@@ -133,6 +155,7 @@ export function CoachView({ session }: Props) {
                   <th onClick={() => toggleSort('rank')}>%</th>
                   <th onClick={() => toggleSort('weeks')}>Weeks</th>
                   <th onClick={() => toggleSort('active')}>Last active</th>
+                  <th />
                 </tr>
               </thead>
               <tbody>
@@ -146,11 +169,57 @@ export function CoachView({ session }: Props) {
                       {r.weeks}/{WEEKS.length}
                     </td>
                     <td>{formatRelative(r.lastActive)}</td>
+                    <td>
+                      <button
+                        className="btn"
+                        onClick={() => {
+                          setNudgeTarget({ userId: r.userId, name: r.state.name });
+                          setNudgeFeedback('');
+                        }}
+                      >
+                        Nudge
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
+        )}
+
+        {nudgeTarget && (
+          <div className="nudge-composer">
+            <p className="meta">
+              Nudging <strong className="who">{nudgeTarget.name || 'this soldier'}</strong> — they'll see this as a
+              banner next time they open the app while signed in.
+            </p>
+            <textarea
+              rows={2}
+              maxLength={300}
+              value={nudgeMessage}
+              placeholder="e.g. Haven't seen you log this week — everything OK? Get that run in!"
+              onChange={(e) => setNudgeMessage(e.target.value)}
+            />
+            <div className="row">
+              <button className="btn" onClick={onSendNudge} disabled={sendingNudge || !nudgeMessage.trim()}>
+                {sendingNudge ? 'Sending…' : 'Send nudge'}
+              </button>
+              <button
+                className="btn"
+                onClick={() => {
+                  setNudgeTarget(null);
+                  setNudgeMessage('');
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+        {nudgeFeedback && (
+          <p className="message" role="status">
+            {nudgeFeedback}
+          </p>
         )}
       </div>
     </section>
